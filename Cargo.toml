@@ -1,12 +1,12 @@
 [package]
-name = "advent-of-code-2015"
+name = "advent-of-code-2019"
 version = "0.1.0"
-authors = ["Grégory Obanos <gregory.obanos@gmail.com>"]
+authors = ["Ole Martin Ruud"]
+edition = "2018"
 
 [lib]
 bench = false
 
 [dependencies]
-rust-crypto = "0.2.36"
-aoc-runner = "0.1.0"
-aoc-runner-derive = "0.1.0"
+aoc-runner = "0.2"
+aoc-runner-derive = "0.2"
