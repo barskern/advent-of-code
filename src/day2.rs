@@ -40,6 +40,15 @@ impl Machine {
             op => Err(format!("invalid opcode at {}: {}", self.pc, op).into()),
         }
     }
+
+    fn run(&mut self) -> Result<usize> {
+        loop {
+            match self.step()? {
+                Status::Continue => {}
+                Status::Done => break Ok(self.memory[0]),
+            }
+        }
+    }
 }
 
 #[aoc(day2, part1)]
@@ -53,10 +62,28 @@ pub fn part1(input: &str) -> Result<usize> {
     // Initialize machine with memory and program counter
     let mut machine = Machine { pc: 0, memory };
 
-    loop {
-        match machine.step()? {
-            Status::Continue => {}
-            Status::Done => break Ok(machine.memory[0]),
-        }
-    }
+    machine.run()
+}
+
+#[aoc(day2, part2)]
+pub fn part2(input: &str) -> Result<usize> {
+    let initial_memory: Vec<usize> = input.split(',').map(|s| s.parse().unwrap()).collect();
+
+    (0..100)
+        .flat_map(|noun| (0..100).map(move |verb| (noun, verb)))
+        .filter_map(|(noun, verb)| {
+            let mut memory = initial_memory.clone();
+
+            // Setup memory crash state
+            memory[1] = noun;
+            memory[2] = verb;
+
+            // Initialize machine with memory and program counter
+            let mut machine = Machine { pc: 0, memory };
+
+            Some((noun, verb, machine.run().ok()?))
+        })
+        .find(|&(_, _, v)| v == 19_690_720)
+        .ok_or_else(|| "did not find a solution".into())
+        .map(|(noun, verb, _)| (noun * 100) + verb)
 }
