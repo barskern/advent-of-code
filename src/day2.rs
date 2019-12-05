@@ -3,6 +3,43 @@ use std::error::Error;
 
 type Result<T, E = Box<dyn Error>> = std::result::Result<T, E>;
 
+#[aoc(day2, part1)]
+pub fn part1(input: &str) -> Result<usize> {
+    let mut memory: Vec<usize> = input.split(',').map(|s| s.parse().unwrap()).collect();
+
+    // Setup memory crash state
+    memory[1] = 12;
+    memory[2] = 2;
+
+    // Initialize machine with memory and program counter
+    let mut machine = Machine { pc: 0, memory };
+
+    machine.run()
+}
+
+#[aoc(day2, part2)]
+pub fn part2(input: &str) -> Result<usize> {
+    let initial_memory: Vec<usize> = input.split(',').map(|s| s.parse().unwrap()).collect();
+
+    (0..100)
+        .flat_map(|noun| (0..100).map(move |verb| (noun, verb)))
+        .filter_map(|(noun, verb)| {
+            let mut memory = initial_memory.clone();
+
+            // Setup memory crash state
+            memory[1] = noun;
+            memory[2] = verb;
+
+            // Initialize machine with memory and program counter
+            let mut machine = Machine { pc: 0, memory };
+
+            Some((noun, verb, machine.run().ok()?))
+        })
+        .find(|&(_, _, v)| v == 19_690_720)
+        .ok_or_else(|| "did not find a solution".into())
+        .map(|(noun, verb, _)| (noun * 100) + verb)
+}
+
 struct Machine {
     pc: usize,
     memory: Vec<usize>,
@@ -49,41 +86,4 @@ impl Machine {
             }
         }
     }
-}
-
-#[aoc(day2, part1)]
-pub fn part1(input: &str) -> Result<usize> {
-    let mut memory: Vec<usize> = input.split(',').map(|s| s.parse().unwrap()).collect();
-
-    // Setup memory crash state
-    memory[1] = 12;
-    memory[2] = 2;
-
-    // Initialize machine with memory and program counter
-    let mut machine = Machine { pc: 0, memory };
-
-    machine.run()
-}
-
-#[aoc(day2, part2)]
-pub fn part2(input: &str) -> Result<usize> {
-    let initial_memory: Vec<usize> = input.split(',').map(|s| s.parse().unwrap()).collect();
-
-    (0..100)
-        .flat_map(|noun| (0..100).map(move |verb| (noun, verb)))
-        .filter_map(|(noun, verb)| {
-            let mut memory = initial_memory.clone();
-
-            // Setup memory crash state
-            memory[1] = noun;
-            memory[2] = verb;
-
-            // Initialize machine with memory and program counter
-            let mut machine = Machine { pc: 0, memory };
-
-            Some((noun, verb, machine.run().ok()?))
-        })
-        .find(|&(_, _, v)| v == 19_690_720)
-        .ok_or_else(|| "did not find a solution".into())
-        .map(|(noun, verb, _)| (noun * 100) + verb)
 }
