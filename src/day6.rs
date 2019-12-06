@@ -2,11 +2,12 @@ use aoc_runner_derive::*;
 use fallible_iterator::{convert, FallibleIterator};
 use std::collections::BTreeMap;
 
-type Result<T, E = Box<dyn std::error::Error>> = std::result::Result<T, E>;
+type Error = Box<dyn std::error::Error>;
+type Result<T, E = Error> = std::result::Result<T, E>;
 
 #[aoc(day6, part1)]
 pub fn part1(input: &str) -> Result<usize> {
-    let m = convert(input.lines().map(Ok::<&str, Box<dyn std::error::Error>>))
+    let orbiters = convert(input.lines().map(Ok::<&str, Error>))
         .map(|line| {
             let mut s = line.split(')');
             Ok((
@@ -38,26 +39,25 @@ pub fn part1(input: &str) -> Result<usize> {
         depth + sub_orbits
     }
 
-    Ok(orbit_count(&m, "COM", 0))
+    Ok(orbit_count(&orbiters, "COM", 0))
 }
 
 #[aoc(day6, part2)]
 pub fn part2(input: &str) -> Result<usize> {
-    let parents: BTreeMap<_, _> =
-        convert(input.lines().map(Ok::<&str, Box<dyn std::error::Error>>))
-            .map(|line| {
-                let mut s = line.split(')');
-                Ok((
-                    s.next().ok_or("missing center")?,
-                    s.next().ok_or("missing orbiter")?,
-                ))
-            })
-            // Swap places for center and orbiter, so the map will have the child as key and parent
-            // as value
-            .map(|(center, orbiter)| Ok((orbiter, center)))
-            .collect()?;
+    let parents: BTreeMap<_, _> = convert(input.lines().map(Ok::<&str, Error>))
+        .map(|line| {
+            let mut s = line.split(')');
+            Ok((
+                s.next().ok_or("missing center")?,
+                s.next().ok_or("missing orbiter")?,
+            ))
+        })
+        // Swap places for center and orbiter, so the map will have the child as key and parent
+        // as value
+        .map(|(center, orbiter)| Ok((orbiter, center)))
+        .collect()?;
 
-    let mut you_parents = std::iter::successors(parents.get("YOU"), |&n| parents.get(n));
+    let you_parents = std::iter::successors(parents.get("YOU"), |&n| parents.get(n));
     let san_parents = std::iter::successors(parents.get("SAN"), |&n| parents.get(n));
 
     // Calculate the distance from YOU and SAN to the first common parent and sum the distances
