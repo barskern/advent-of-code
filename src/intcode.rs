@@ -14,7 +14,7 @@ struct Machine {
 #[derive(Debug)]
 enum Status {
     Continue,
-    Done,
+    Halt,
 }
 
 #[derive(Debug, PartialEq, TryFromPrimitive, IntoPrimitive)]
@@ -154,7 +154,7 @@ impl Machine {
                 }
                 Ok(Status::Continue)
             }
-            Opcode::Halt => Ok(Status::Done),
+            Opcode::Halt => Ok(Status::Halt),
         }
     }
 
@@ -162,7 +162,7 @@ impl Machine {
         loop {
             match self.step()? {
                 Status::Continue => {}
-                Status::Done => break Ok(self.memory[0]),
+                Status::Halt => break Ok(self.memory[0]),
             }
         }
     }
