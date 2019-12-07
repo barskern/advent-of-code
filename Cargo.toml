@@ -13,6 +13,7 @@ aoc-runner-derive = "0.2"
 nalgebra = "0.19.0"
 itertools = "0.8.2"
 fallible-iterator = "0.2.0"
+num_enum = "0.4.2"
 
 [dev-dependencies]
 criterion = "0.2"
