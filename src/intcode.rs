@@ -31,6 +31,22 @@ enum Opcode {
     Halt = 99,
 }
 
+impl Opcode {
+    fn arg_count(&self) -> usize {
+        match self {
+            Opcode::Add => 3,
+            Opcode::Mul => 3,
+            Opcode::Input => 1,
+            Opcode::Output => 1,
+            Opcode::IsNotZero => 2,
+            Opcode::IsZero => 2,
+            Opcode::LessThan => 3,
+            Opcode::Equal => 3,
+            Opcode::Halt => 1,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, TryFromPrimitive, IntoPrimitive)]
 #[repr(u8)]
 enum Mode {
@@ -68,91 +84,74 @@ impl Machine {
             self.pc as isize + 3,
         ];
 
-        let mut set_arg_modes = |n: usize| {
-            args[..n]
-                .iter_mut()
-                .zip(instr.modes.iter())
-                .for_each(|(arg, mode)| match mode {
-                    Mode::Position => *arg = self.memory[*arg as usize],
-                    Mode::Immidiate => {}
-                    _ => unreachable!(),
-                });
-        };
+        // Update needed argument modes
+        args[..instr.opcode.arg_count()]
+            .iter_mut()
+            .zip(instr.modes.iter())
+            .for_each(|(arg, mode)| match mode {
+                Mode::Position => *arg = self.memory[*arg as usize],
+                Mode::Immidiate => {}
+            });
+
+        // Update program counter
+        self.pc += instr.opcode.arg_count() + 1;
 
         match instr.opcode {
             Opcode::Add => {
-                set_arg_modes(3);
                 let [a, b, c] = args;
                 self.memory[c as usize] = self.memory[a as usize] + self.memory[b as usize];
-                self.pc += 4;
                 Ok(Status::Continue)
             }
             Opcode::Mul => {
-                set_arg_modes(3);
                 let [a, b, c] = args;
                 self.memory[c as usize] = self.memory[a as usize] * self.memory[b as usize];
-                self.pc += 4;
                 Ok(Status::Continue)
             }
             Opcode::Input => {
-                set_arg_modes(1);
                 let [a, _, _] = args;
                 self.memory[a as usize] = {
                     let mut s = String::new();
                     std::io::stdin().read_line(&mut s)?;
                     s.trim().parse()?
                 };
-                self.pc += 2;
                 Ok(Status::Continue)
             }
             Opcode::Output => {
-                set_arg_modes(1);
                 let [a, _, _] = args;
                 println!("{}", self.memory[a as usize]);
-                std::io::stdout().flush();
-                self.pc += 2;
+                std::io::stdout().flush()?;
                 Ok(Status::Continue)
             }
             Opcode::IsNotZero => {
-                set_arg_modes(2);
                 let [a, b, _] = args;
                 if self.memory[a as usize] != 0 {
                     self.pc = self.memory[b as usize] as usize;
-                } else {
-                    self.pc += 3;
                 }
                 Ok(Status::Continue)
             }
             Opcode::IsZero => {
-                set_arg_modes(2);
                 let [a, b, _] = args;
                 if self.memory[a as usize] == 0 {
                     self.pc = self.memory[b as usize] as usize;
-                } else {
-                    self.pc += 3;
                 }
                 Ok(Status::Continue)
             }
             Opcode::LessThan => {
-                set_arg_modes(3);
                 let [a, b, c] = args;
                 if self.memory[a as usize] < self.memory[b as usize] {
                     self.memory[c as usize] = 1;
                 } else {
                     self.memory[c as usize] = 0;
                 }
-                self.pc += 4;
                 Ok(Status::Continue)
             }
             Opcode::Equal => {
-                set_arg_modes(3);
                 let [a, b, c] = args;
                 if self.memory[a as usize] == self.memory[b as usize] {
                     self.memory[c as usize] = 1;
                 } else {
                     self.memory[c as usize] = 0;
                 }
-                self.pc += 4;
                 Ok(Status::Continue)
             }
             Opcode::Halt => Ok(Status::Done),
