@@ -78,13 +78,13 @@ impl TryFrom<isize> for Instruction {
 impl Machine {
     fn step(&mut self) -> Result<Status> {
         let instr = Instruction::try_from(self.memory[self.pc])?;
+
+        // Create arguments
         let mut args = [
             self.pc as isize + 1,
             self.pc as isize + 2,
             self.pc as isize + 3,
         ];
-
-        // Update needed argument modes
         args[..instr.opcode.arg_count()]
             .iter_mut()
             .zip(instr.modes.iter())
