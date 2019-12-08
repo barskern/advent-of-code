@@ -1,6 +1,6 @@
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use std::convert::{TryFrom, TryInto};
-use std::io::{BufRead, Write};
+use std::io::{Read, Write};
 
 type Error = Box<dyn std::error::Error>;
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -13,7 +13,7 @@ struct Machine<R, W> {
     output: W,
 }
 
-impl<R: BufRead, W: Write> Machine<R, W> {
+impl<R: Read, W: Write> Machine<R, W> {
     fn step(&mut self) -> Result<Status> {
         let instr = Instruction::try_from(self.memory[self.pc])?;
 
@@ -49,7 +49,7 @@ impl<R: BufRead, W: Write> Machine<R, W> {
                 let [a, _, _] = args;
                 self.memory[a as usize] = {
                     let mut s = String::new();
-                    self.input.read_line(&mut s)?;
+                    self.input.read_to_string(&mut s)?;
                     s.trim().parse()?
                 };
                 Ok(Status::Continue)
