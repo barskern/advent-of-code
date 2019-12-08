@@ -64,7 +64,7 @@ impl<R: BufRead, W: Write> Machine<R, W> {
             }
             Opcode::Output => {
                 let [a, _, _] = args;
-                write!(self.output, "{}", self.memory[a as usize])?;
+                writeln!(self.output, "{}", self.memory[a as usize])?;
                 self.output.flush()?;
                 Ok(Status::Continue)
             }

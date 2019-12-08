@@ -21,6 +21,7 @@ pub fn part1(input: &str) -> Result<usize> {
                 machine.run()?;
 
                 String::from_utf8_lossy(&output)
+                    .trim()
                     .parse()
                     .map_err(Error::from)
             })
