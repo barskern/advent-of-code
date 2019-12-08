@@ -175,7 +175,7 @@ impl Opcode {
             Opcode::IsZero => 2,
             Opcode::LessThan => 3,
             Opcode::Equal => 3,
-            Opcode::Halt => 1,
+            Opcode::Halt => 0,
         }
     }
 }
