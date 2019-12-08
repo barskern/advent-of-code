@@ -1,19 +1,27 @@
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use std::convert::{TryFrom, TryInto};
-use std::io::{Read, Write};
+use std::io::{BufRead, Write};
 
 type Error = Box<dyn std::error::Error>;
 type Result<T, E = Error> = std::result::Result<T, E>;
 
 #[derive(Debug)]
-struct Machine<R, W> {
+pub struct Machine<R, W> {
     pc: usize,
     memory: Vec<isize>,
     input: R,
     output: W,
 }
 
-impl<R: Read, W: Write> Machine<R, W> {
+impl<R: BufRead, W: Write> Machine<R, W> {
+    pub fn new(memory: Vec<isize>, input: R, output: W) -> Self {
+        Machine {
+            pc: 0,
+            memory,
+            input,
+            output,
+        }
+    }
     fn step(&mut self) -> Result<Status> {
         let instr = Instruction::try_from(self.memory[self.pc])?;
 
@@ -49,7 +57,7 @@ impl<R: Read, W: Write> Machine<R, W> {
                 let [a, _, _] = args;
                 self.memory[a as usize] = {
                     let mut s = String::new();
-                    self.input.read_to_string(&mut s)?;
+                    self.input.read_line(&mut s)?;
                     s.trim().parse()?
                 };
                 Ok(Status::Continue)
@@ -96,7 +104,7 @@ impl<R: Read, W: Write> Machine<R, W> {
         }
     }
 
-    fn run(&mut self) -> Result<isize> {
+    pub fn run(&mut self) -> Result<isize> {
         loop {
             match self.step()? {
                 Status::Continue => {}
