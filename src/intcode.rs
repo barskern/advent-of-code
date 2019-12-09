@@ -89,7 +89,7 @@ impl Machine {
                     })?;
                 Ok(Status::Advance(instr.opcode.arg_count() + 1))
             }
-            Opcode::IsNotZero => {
+            Opcode::JumpNotZero => {
                 let [a, b, _] = args;
                 if self.memory[a as usize] != 0 {
                     Ok(Status::Jump(self.memory[b as usize] as usize))
@@ -97,7 +97,7 @@ impl Machine {
                     Ok(Status::Advance(instr.opcode.arg_count() + 1))
                 }
             }
-            Opcode::IsZero => {
+            Opcode::JumpZero => {
                 let [a, b, _] = args;
                 if self.memory[a as usize] == 0 {
                     Ok(Status::Jump(self.memory[b as usize] as usize))
@@ -157,10 +157,11 @@ pub enum Opcode {
     Mul = 2,
     Input = 3,
     Output = 4,
-    IsNotZero = 5,
-    IsZero = 6,
+    JumpNotZero = 5,
+    JumpZero = 6,
     LessThan = 7,
     Equal = 8,
+    OffsetRBase = 9,
     Halt = 99,
 }
 
@@ -171,10 +172,11 @@ impl Opcode {
             Opcode::Mul => 3,
             Opcode::Input => 1,
             Opcode::Output => 1,
-            Opcode::IsNotZero => 2,
-            Opcode::IsZero => 2,
+            Opcode::JumpNotZero => 2,
+            Opcode::JumpZero => 2,
             Opcode::LessThan => 3,
             Opcode::Equal => 3,
+            Opcode::OffsetRBase => 1,
             Opcode::Halt => 0,
         }
     }
