@@ -28,6 +28,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 #[derive(Debug)]
 pub struct Machine {
     pc: usize,
+    relative_base: usize,
     memory: Vec<isize>,
     input: Receiver<isize>,
     output: SyncSender<isize>,
@@ -37,6 +38,7 @@ impl Machine {
     pub fn new(memory: Vec<isize>, input: Receiver<isize>, output: SyncSender<isize>) -> Self {
         Machine {
             pc: 0,
+            relative_base: 0,
             memory,
             input,
             output,
@@ -54,6 +56,7 @@ impl Machine {
             .zip(instr.modes.iter())
             .for_each(|(arg, mode)| match mode {
                 Mode::Position => *arg = self.memory[*arg as usize],
+                Mode::Relative => *arg = self.memory[*arg as usize + self.relative_base],
                 Mode::Immidiate => {}
             });
 
@@ -123,6 +126,11 @@ impl Machine {
                 }
                 Ok(Status::Advance(instr.opcode.arg_count() + 1))
             }
+            Opcode::OffsetRBase => {
+                let [a, _, _] = args;
+                self.relative_base += self.memory[a as usize] as usize;
+                Ok(Status::Advance(instr.opcode.arg_count() + 1))
+            }
             Opcode::Halt => Ok(Status::Halt),
         }
     }
@@ -187,6 +195,7 @@ impl Opcode {
 pub enum Mode {
     Position = 0,
     Immidiate = 1,
+    Relative = 2,
 }
 
 #[derive(Debug)]
