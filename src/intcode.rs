@@ -55,89 +55,105 @@ impl Machine {
             .iter_mut()
             .zip(instr.modes.iter())
             .for_each(|(arg, mode)| match mode {
-                Mode::Position => *arg = self.memory[*arg as usize],
-                Mode::Relative => *arg = self.memory[*arg as usize + self.relative_base],
+                Mode::Position => *arg = self.addr(*arg as usize),
+                Mode::Relative => *arg = self.addr(*arg as usize) + self.relative_base as isize,
                 Mode::Immidiate => {}
             });
 
         match instr.opcode {
             Opcode::Add => {
                 let [a, b, c] = args;
-                self.memory[c as usize] = self.memory[a as usize] + self.memory[b as usize];
+                let value = self.addr(a as usize) + self.addr(b as usize);
+                self.set_addr(c as usize, value);
                 Ok(Status::Advance(instr.opcode.arg_count() + 1))
             }
             Opcode::Mul => {
                 let [a, b, c] = args;
-                self.memory[c as usize] = self.memory[a as usize] * self.memory[b as usize];
+                let value = self.addr(a as usize) * self.addr(b as usize);
+                self.set_addr(c as usize, value);
                 Ok(Status::Advance(instr.opcode.arg_count() + 1))
             }
             Opcode::Input => {
                 use std::sync::mpsc::TryRecvError;
                 let [a, _, _] = args;
-                self.memory[a as usize] = self.input.try_recv().map_err(|e| match e {
+                let value = self.input.try_recv().map_err(|e| match e {
                     TryRecvError::Empty => Error::WouldBlock,
                     TryRecvError::Disconnected => Error::InputClosed,
                 })?;
+                self.set_addr(a as usize, value);
                 Ok(Status::Advance(instr.opcode.arg_count() + 1))
             }
             Opcode::Output => {
                 use std::sync::mpsc::TrySendError;
                 let [a, _, _] = args;
+                let value = self.addr(a as usize);
                 // Ignore failures when reciving channel is dropped (sending to void is okay)
-                self.output
-                    .try_send(self.memory[a as usize])
-                    .map_err(|e| match e {
-                        TrySendError::Full(_) => Error::WouldBlock,
-                        TrySendError::Disconnected(_) => Error::OutputClosed,
-                    })?;
+                self.output.try_send(value).map_err(|e| match e {
+                    TrySendError::Full(_) => Error::WouldBlock,
+                    TrySendError::Disconnected(_) => Error::OutputClosed,
+                })?;
                 Ok(Status::Advance(instr.opcode.arg_count() + 1))
             }
             Opcode::JumpNotZero => {
                 let [a, b, _] = args;
-                if self.memory[a as usize] != 0 {
-                    Ok(Status::Jump(self.memory[b as usize] as usize))
+                if self.addr(a as usize) != 0 {
+                    Ok(Status::Jump(self.addr(b as usize) as usize))
                 } else {
                     Ok(Status::Advance(instr.opcode.arg_count() + 1))
                 }
             }
             Opcode::JumpZero => {
                 let [a, b, _] = args;
-                if self.memory[a as usize] == 0 {
-                    Ok(Status::Jump(self.memory[b as usize] as usize))
+                if self.addr(a as usize) == 0 {
+                    Ok(Status::Jump(self.addr(b as usize) as usize))
                 } else {
                     Ok(Status::Advance(instr.opcode.arg_count() + 1))
                 }
             }
             Opcode::LessThan => {
                 let [a, b, c] = args;
-                if self.memory[a as usize] < self.memory[b as usize] {
-                    self.memory[c as usize] = 1;
+                if self.addr(a as usize) < self.addr(b as usize) {
+                    self.set_addr(c as usize, 1);
                 } else {
-                    self.memory[c as usize] = 0;
+                    self.set_addr(c as usize, 0);
                 }
                 Ok(Status::Advance(instr.opcode.arg_count() + 1))
             }
             Opcode::Equal => {
                 let [a, b, c] = args;
-                if self.memory[a as usize] == self.memory[b as usize] {
-                    self.memory[c as usize] = 1;
+                if self.addr(a as usize) == self.addr(b as usize) {
+                    self.set_addr(c as usize, 1);
                 } else {
-                    self.memory[c as usize] = 0;
+                    self.set_addr(c as usize, 0);
                 }
                 Ok(Status::Advance(instr.opcode.arg_count() + 1))
             }
             Opcode::OffsetRBase => {
                 let [a, _, _] = args;
-                self.relative_base += self.memory[a as usize] as usize;
+                self.relative_base += self.addr(a as usize) as usize;
                 Ok(Status::Advance(instr.opcode.arg_count() + 1))
             }
             Opcode::Halt => Ok(Status::Halt),
         }
     }
 
+    fn addr(&mut self, addr: usize) -> isize {
+        if self.memory.len() <= addr {
+            self.memory.resize(addr + 1, 0);
+        }
+        self.memory[addr]
+    }
+
+    fn set_addr(&mut self, addr: usize, value: isize) {
+        if self.memory.len() <= addr {
+            self.memory.resize(addr + 1, 0);
+        }
+        self.memory[addr] = value;
+    }
+
     pub fn run(&mut self) -> Result<isize> {
         loop {
-            let instr = Instruction::try_from(self.memory[self.pc])?;
+            let instr = Instruction::try_from(self.addr(self.pc))?;
             match self.execute(instr)? {
                 Status::Advance(incr) => {
                     self.pc += incr;
@@ -145,7 +161,7 @@ impl Machine {
                 Status::Jump(new_pc) => {
                     self.pc = new_pc;
                 }
-                Status::Halt => break Ok(self.memory[0]),
+                Status::Halt => break Ok(self.addr(0)),
             }
         }
     }
