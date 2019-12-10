@@ -33,13 +33,13 @@ pub fn part1(input: &str) -> Result<usize> {
                     if delta.x == 0 {
                         (min(p.y, q.y)..max(p.y, q.y))
                             .map(|ny| Point2::new(p.x, ny))
-                            // the first generated point is always the current asteroid
+                            // the first generated point is either `p` or `q`
                             .skip(1)
                             .all(|p| !asteroids.contains(&p))
                     } else if delta.y == 0 {
                         (min(p.x, q.x)..max(p.x, q.x))
                             .map(|nx| Point2::new(nx, p.y))
-                            // the first generated point is always the current asteroid
+                            // the first generated point is either `p` or `q`
                             .skip(1)
                             .all(|p| !asteroids.contains(&p))
                     } else {
