@@ -1,5 +1,6 @@
 use crate::intcode::Machine;
 use aoc_runner_derive::*;
+use itertools::Itertools;
 use nalgebra::{Matrix2, Point2, Unit, Vector2};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use std::collections::HashMap;
@@ -23,7 +24,7 @@ pub fn part1(input: &str) -> Result<usize> {
         )
     };
 
-    let mut panel = Panel::default();
+    let mut panel = Panel::new(Color::Black);
     let mut robot = Robot::new();
 
     loop {
@@ -33,7 +34,8 @@ pub fn part1(input: &str) -> Result<usize> {
         // Run robot program until next requested input
         match machine.run() {
             Err(crate::intcode::Error::WouldBlock) => {}
-            r @ Ok(_) | r @ Err(_) => break r,
+            Err(e) => return Err(e.into()),
+            Ok(_) => break,
         }
 
         // Convert output
@@ -46,15 +48,53 @@ pub fn part1(input: &str) -> Result<usize> {
         // Rotate and move robot
         robot.rotate(turn);
         robot.step();
-    }?;
+    }
 
     Ok(panel.state.len())
 }
 
-// #[aoc(day11, part2)]
-// pub fn part2(input: &str) -> Result<usize> {
-//     unimplemented!()
-// }
+#[aoc(day11, part2)]
+pub fn part2(input: &str) -> Result<String> {
+    let memory: Vec<isize> = input.split(',').map(|s| s.parse().unwrap()).collect();
+
+    let (mut machine, input, output) = {
+        let (input_tx, input_rx) = sync_channel::<isize>(10);
+        let (output_tx, output_rx) = sync_channel::<isize>(10);
+        (
+            Machine::new(memory, input_rx, output_tx),
+            input_tx,
+            output_rx,
+        )
+    };
+
+    let mut panel = Panel::new(Color::White);
+    let mut robot = Robot::new();
+
+    loop {
+        let color = panel.color(&robot.pos);
+        input.send((*color).into()).unwrap();
+
+        // Run robot program until next requested input
+        match machine.run() {
+            Err(crate::intcode::Error::WouldBlock) => {}
+            Err(e) => return Err(e.into()),
+            Ok(_) => break,
+        }
+
+        // Convert output
+        let (new_color, turn): (Color, Turn) =
+            (output.recv()?.try_into()?, output.recv()?.try_into()?);
+
+        // Update panel
+        panel.paint(robot.pos, new_color);
+
+        // Rotate and move robot
+        robot.rotate(turn);
+        robot.step();
+    }
+
+    Ok(panel.as_ascii_art())
+}
 
 #[derive(Debug)]
 struct Robot {
@@ -72,8 +112,8 @@ impl Robot {
 
     fn rotate(&mut self, turn: Turn) {
         let rot: Matrix2<isize> = match turn {
-            Turn::Left => Matrix2::new(0, -1, 1, 0),
-            Turn::Right => Matrix2::new(0, 1, -1, 0),
+            Turn::Left => Matrix2::new(0, 1, -1, 0),
+            Turn::Right => Matrix2::new(0, -1, 1, 0),
         };
 
         // This is safe because the matrix only rotates (doesn't scale the vector)
@@ -85,18 +125,44 @@ impl Robot {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct Panel {
     state: HashMap<Point2<isize>, Color>,
 }
 
 impl Panel {
+    fn new(start: Color) -> Self {
+        let mut state = HashMap::default();
+        state.insert(Point2::new(0, 0), start);
+
+        Panel { state }
+    }
+
     fn color(&self, p: &Point2<isize>) -> &Color {
         self.state.get(p).unwrap_or(&Color::Black)
     }
 
     fn paint(&mut self, p: Point2<isize>, color: Color) {
         self.state.insert(p, color);
+    }
+
+    fn as_ascii_art(&self) -> String {
+        #[rustfmt::skip]
+        let (min_x, max_x) = self.state.keys().map(|p| p.x).minmax().into_option().unwrap();
+        #[rustfmt::skip]
+        let (min_y, max_y) = self.state.keys().map(|p| p.y).minmax().into_option().unwrap();
+
+        let mut s = String::with_capacity(((max_x - min_x) * (max_y - min_y)) as usize);
+        for y in min_y..=max_y {
+            s.push('\n');
+            for x in min_x..=max_x {
+                match self.color(&Point2::new(x, y)) {
+                    Color::White => s.push('#'),
+                    Color::Black => s.push(' '),
+                }
+            }
+        }
+        s
     }
 }
 
