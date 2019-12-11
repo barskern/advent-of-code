@@ -106,14 +106,14 @@ impl Robot {
     fn new() -> Self {
         Robot {
             pos: Point2::new(0, 0),
-            dir: -Vector2::y_axis(),
+            dir: Vector2::y_axis(),
         }
     }
 
     fn rotate(&mut self, turn: Turn) {
         let rot: Matrix2<isize> = match turn {
-            Turn::Left => Matrix2::new(0, 1, -1, 0),
-            Turn::Right => Matrix2::new(0, -1, 1, 0),
+            Turn::Left => Matrix2::new(0, -1, 1, 0),
+            Turn::Right => Matrix2::new(0, 1, -1, 0),
         };
 
         // This is safe because the matrix only rotates (doesn't scale the vector)
@@ -153,7 +153,8 @@ impl Panel {
         let (min_y, max_y) = self.state.keys().map(|p| p.y).minmax().into_option().unwrap();
 
         let mut s = String::with_capacity(((max_x - min_x) * (max_y - min_y)) as usize);
-        for y in min_y..=max_y {
+        // Go from max_y to min_y because we have to draw from top to bottom
+        for y in (min_y..=max_y).rev() {
             s.push('\n');
             for x in min_x..=max_x {
                 match self.color(&Point2::new(x, y)) {
