@@ -8,13 +8,14 @@ edition = "2018"
 bench = false
 
 [dependencies]
-aoc-runner = "0.2"
-aoc-runner-derive = "0.2"
-nalgebra = "0.19.0"
+aoc-runner = "0.2.2"
+aoc-runner-derive = "0.2.2"
+nalgebra = { version = "0.19.0", features = ["serde-serialize"] }
 itertools = "0.8.2"
 fallible-iterator = "0.2.0"
 num_enum = "0.4.2"
 snafu = "0.6.0"
+serde_scan = "0.3.2"
 
 [dev-dependencies]
 criterion = "0.2"
