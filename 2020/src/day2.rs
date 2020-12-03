@@ -1,6 +1,6 @@
 use aoc_runner_derive::*;
 
-use anyhow::{Context, Result};
+use anyhow::{Result};
 
 #[aoc(day2, part1)]
 pub fn part1(input: &str) -> Result<usize> {
