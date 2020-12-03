@@ -10,7 +10,7 @@ fn gen(input: &str) -> Vec<Vec<bool>> {
 
 fn crashes(map: &[Vec<bool>], x_slope: usize, y_slope: usize) -> usize {
     let ys = (0..map.len()).step_by(y_slope);
-    let xs = (0..).step_by(x_slope).map(|x| x % map[0].len());
+    let xs = (0..map[0].len()).cycle().step_by(x_slope);
 
     ys.zip(xs).filter(|&(y, x)| map[y][x]).count()
 }
