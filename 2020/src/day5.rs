@@ -60,16 +60,16 @@ pub fn part2(seats: &[Seat]) -> Result<usize> {
 
     seats.sort_by_key(|s| s.seat_id());
 
-    let ss = seats
+    let neighbours = seats
         .windows(2)
         // our seat is where there is a gap in seat ids (e.g. seat_id diff > 1)
-        .find(|ss| (ss[1].seat_id() - ss[0].seat_id()) > 1)
+        .find(|neighbours| (neighbours[1].seat_id() - neighbours[0].seat_id()) > 1)
         .context("no holes in seats")?;
-    let (left, right) = (&ss[0], &ss[1]);
 
+    // my seat is between the neighbours
     let my_seat = Seat {
-        column: left.column + (right.column - left.column) / 2,
-        row: left.row + (right.row - left.row) / 2,
+        column: neighbours[0].column + (neighbours[1].column - neighbours[0].column) / 2,
+        row: neighbours[0].row + (neighbours[1].row - neighbours[0].row) / 2,
     };
 
     Ok(my_seat.seat_id())
