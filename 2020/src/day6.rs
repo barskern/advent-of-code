@@ -21,7 +21,7 @@ pub fn part1(groups: &[GroupAnswers]) -> usize {
         .map(|group_answers| {
             group_answers
                 .iter()
-                .fold(Answers::new(), |state, answers| &state | answers)
+                .fold(Answers::new(), |ref state, answers| state | answers)
                 .len()
         })
         .sum()
@@ -36,7 +36,7 @@ pub fn part2(groups: &[GroupAnswers]) -> usize {
         .map(|group_answers| {
             group_answers
                 .iter()
-                .fold(all_answers.clone(), |state, answers| &state & answers)
+                .fold(all_answers.clone(), |ref state, answers| state & answers)
                 .len()
         })
         .sum()
