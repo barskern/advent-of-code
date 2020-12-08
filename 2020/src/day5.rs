@@ -87,7 +87,7 @@ mod tests {
     ];
 
     #[test]
-    fn valid_test() {
+    fn parsing_valid_seats_test() {
         EXAMPLES
             .iter()
             .for_each(|(s, seat)| assert_eq!(seat, &Seat::decode(s).unwrap()));

@@ -106,7 +106,7 @@ dark blue bags contain 2 dark violet bags.
 dark violet bags contain no other bags."#;
 
     #[test]
-    fn example_test() {
+    fn part2_test() {
         assert_eq!(126, part2(&gen(EXAMPLE).unwrap()));
     }
 }

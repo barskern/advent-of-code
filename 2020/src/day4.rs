@@ -86,7 +86,7 @@ iyr:2010 hgt:158cm hcl:#b6652a ecl:blu byr:1944 eyr:2021 pid:093154719
 "#;
 
     #[test]
-    fn check_some_valid() {
+    fn part2_test() {
         assert_eq!(4, part2(&gen(VALID_PASSWORDS)));
     }
 }
