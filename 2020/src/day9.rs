@@ -27,10 +27,6 @@ pub fn two_sum(chosable: &[usize], wanted_sum: usize) -> Option<(usize, usize)> 
         } else if sum < wanted_sum {
             // sum is too small, hence the current small number is too small to be part of sum
             small_index += 1;
-        } else if chosable[small_index] == chosable[big_index] {
-            // small and big numbers being equal means we have reached the center and the center
-            // consists of duplicates of the same numbers.
-            break;
         } else if sum == wanted_sum {
             return Some((small_index, big_index));
         }
@@ -38,14 +34,34 @@ pub fn two_sum(chosable: &[usize], wanted_sum: usize) -> Option<(usize, usize)> 
     None
 }
 
-#[aoc(day9, part1)]
-pub fn part1(input: &[usize]) -> Result<usize> {
+#[aoc(day9, part1, alloc)]
+pub fn part1_alloc(input: &[usize]) -> Result<usize> {
+    input
+        .windows(WINDOW_SIZE + 1)
+        .find_map(|window| {
+            let mut chosable = window[..WINDOW_SIZE].to_vec();
+            chosable.sort_unstable();
+
+            let wanted_sum = window[WINDOW_SIZE];
+
+            if two_sum(&chosable, wanted_sum).is_none() {
+                Some(wanted_sum)
+            } else {
+                None
+            }
+        })
+        .context("did not find any non-two-sum number")
+}
+
+#[aoc(day9, part1, reuse)]
+pub fn part1_reuse(input: &[usize]) -> Result<usize> {
+    // allocate a buffer here once, and reuse it for all subsequent windows (to enable sorting)
     let mut chosable = vec![0; WINDOW_SIZE];
 
     input
         .windows(WINDOW_SIZE + 1)
         .find_map(|window| {
-            chosable.copy_from_slice(&window[0..WINDOW_SIZE]);
+            chosable.copy_from_slice(&window[..WINDOW_SIZE]);
             chosable.sort_unstable();
 
             let wanted_sum = window[WINDOW_SIZE];
@@ -61,7 +77,7 @@ pub fn part1(input: &[usize]) -> Result<usize> {
 
 #[aoc(day9, part2)]
 pub fn part2(input: &[usize]) -> Result<usize> {
-    let wrong_sum = part1(input)?;
+    let wrong_sum = part1_reuse(input)?;
 
     let mut small_index = 0;
     let mut big_index = 1;
