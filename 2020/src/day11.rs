@@ -11,41 +11,34 @@ fn gen(input: &str) -> Result<Seats> {
     input.parse().context("unable to parse seats")
 }
 
-#[aoc(day11, part1)]
-pub fn part1(input: &Seats) -> usize {
-    let mut seats = input.clone();
-
+fn run(mut seats: Seats, proximity: Proximity) -> usize{
     std::iter::repeat_with(|| {
-        seats.step(Preference::Immidiate);
+        seats.step(proximity);
         seats.occupied_seats()
     })
     .tuple_windows()
     .find(|(a, b)| a == b)
     .map(|(a, _)| a)
     .expect("unreachable: repeat_with is never empty")
+}
+
+#[aoc(day11, part1)]
+pub fn part1(input: &Seats) -> usize {
+    run(input.clone(), Proximity::Immidiate)
 }
 
 #[aoc(day11, part2)]
 pub fn part2(input: &Seats) -> usize {
-    let mut seats = input.clone();
-
-    std::iter::repeat_with(|| {
-        seats.step(Preference::Visible);
-        seats.occupied_seats()
-    })
-    .tuple_windows()
-    .find(|(a, b)| a == b)
-    .map(|(a, _)| a)
-    .expect("unreachable: repeat_with is never empty")
+    run(input.clone(), Proximity::Visible)
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]
-enum Preference {
+enum Proximity {
     Immidiate,
     Visible,
 }
 
-impl Preference {
+impl Proximity {
     fn occupied_threshold(&self) -> usize {
         match *self {
             Self::Immidiate => 4,
@@ -117,7 +110,7 @@ impl Seats {
             .map(|(ny, nx)| (ny as usize, nx as usize))
     }
 
-    fn step(&mut self, preference: Preference) {
+    fn step(&mut self, proximity: Proximity) {
         let should_flip: Vec<_> = (0..self.height)
             .cartesian_product(0..self.width)
             .filter(|&(y, x)| {
@@ -126,13 +119,13 @@ impl Seats {
                     return false;
                 }
 
-                let neighbours_occupied = match preference {
-                    Preference::Immidiate => self
+                let neighbours_occupied = match proximity {
+                    Proximity::Immidiate => self
                         .immidiate_neighbours_of((y, x))
                         .map(|pos| self[pos])
                         .filter(|&tile| tile == Tile::Occupied)
                         .count(),
-                    Preference::Visible => self
+                    Proximity::Visible => self
                         .visible_neighbours_of((y, x))
                         .map(|pos| self[pos])
                         .filter(|&tile| tile == Tile::Occupied)
@@ -141,7 +134,7 @@ impl Seats {
 
                 match tile {
                     Tile::Vacant => neighbours_occupied == 0,
-                    Tile::Occupied => neighbours_occupied >= preference.occupied_threshold(),
+                    Tile::Occupied => neighbours_occupied >= proximity.occupied_threshold(),
                     Tile::Floor => unreachable!("exit early above to prevent counting"),
                 }
             })
