@@ -76,7 +76,7 @@ struct Ship {
 
 impl Default for Ship {
     fn default() -> Self {
-        Ship {
+        Self {
             facing: Vector2::x_axis(),
             position: Point2::new(0, 0),
         }
@@ -94,12 +94,16 @@ impl Ship {
             Control::Direction(Direction::Right) => {
                 let rot: Rotation2<i32> =
                     Rotation2::from_matrix_unchecked(Matrix2::new(0, 1, -1, 0));
-                self.facing = Unit::new_unchecked(rot * self.facing.into_inner());
+                for _ in 0..amount / 90 {
+                    self.facing = Unit::new_unchecked(rot * self.facing.into_inner());
+                }
             }
             Control::Direction(Direction::Left) => {
                 let rot: Rotation2<i32> =
                     Rotation2::from_matrix_unchecked(Matrix2::new(0, -1, 1, 0));
-                self.facing = Unit::new_unchecked(rot * self.facing.into_inner());
+                for _ in 0..amount / 90 {
+                    self.facing = Unit::new_unchecked(rot * self.facing.into_inner());
+                }
             }
             Control::Direction(Direction::Forward) => {
                 self.position += amount as i32 * self.facing.into_inner();
@@ -108,7 +112,57 @@ impl Ship {
     }
 
     fn manhatten_distance(&self) -> i32 {
-        self.position.x + self.position.y
+        self.position.x.abs() + self.position.y.abs()
+    }
+}
+
+#[derive(Clone, PartialEq, Debug)]
+struct ShipV2 {
+    waypoint: Vector2<i32>,
+    position: Point2<i32>,
+}
+
+impl Default for ShipV2 {
+    fn default() -> Self {
+        Self {
+            waypoint: Vector2::new(10, 1),
+            position: Point2::new(0, 0),
+        }
+    }
+}
+
+impl ShipV2 {
+    fn execute(&mut self, instruction: &Instruction) {
+        let Instruction { control, amount } = *instruction;
+        match control {
+            Control::Compass(control) => {
+                let d: Unit<Vector2<i32>> = control.into();
+                self.waypoint += amount as i32 * d.into_inner();
+            }
+            Control::Direction(Direction::Right) => {
+                let rot: Rotation2<i32> =
+                    Rotation2::from_matrix_unchecked(Matrix2::new(0, 1, -1, 0));
+
+                for _ in 0..amount / 90 {
+                    self.waypoint = rot * self.waypoint;
+                }
+            }
+            Control::Direction(Direction::Left) => {
+                let rot: Rotation2<i32> =
+                    Rotation2::from_matrix_unchecked(Matrix2::new(0, -1, 1, 0));
+
+                for _ in 0..amount / 90 {
+                    self.waypoint = rot * self.waypoint;
+                }
+            }
+            Control::Direction(Direction::Forward) => {
+                self.position += amount as i32 * self.waypoint;
+            }
+        }
+    }
+
+    fn manhatten_distance(&self) -> i32 {
+        self.position.x.abs() + self.position.y.abs()
     }
 }
 
@@ -123,10 +177,34 @@ pub fn part1(input: &[Instruction]) -> i32 {
         .manhatten_distance()
 }
 
-// #[aoc(day12, part2)]
-// pub fn part2(input: &str) -> Result<usize> {
-//     unimplemented!()
-// }
+#[aoc(day12, part2)]
+pub fn part2(input: &[Instruction]) -> i32 {
+    input
+        .iter()
+        .fold(ShipV2::default(), |mut ship, instruction| {
+            ship.execute(instruction);
+            ship
+        })
+        .manhatten_distance()
+}
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use super::*;
+
+    const EXAMPLE: &str = "F10
+N3
+F7
+R90
+F11";
+
+    #[test]
+    fn part1_test() {
+        assert_eq!(25, part1(&gen(EXAMPLE).unwrap()));
+    }
+
+    #[test]
+    fn part2_test() {
+        assert_eq!(286, part2(&gen(EXAMPLE).unwrap()));
+    }
+}
