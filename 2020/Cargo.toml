@@ -17,6 +17,7 @@ anyhow = "1.0.34"
 serde =  { version = "1.0.118", features = ["derive"] }
 serde_scan = "0.4.0"
 nom = "6.0.1"
+primal-sieve = "0.3.1"
 
 [dev-dependencies]
 criterion = "0.3.3"
